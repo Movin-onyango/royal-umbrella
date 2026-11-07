@@ -1,6 +1,6 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/admin'
 
 export async function uploadCarImage(formData: FormData) {
   const file = formData.get('file') as File

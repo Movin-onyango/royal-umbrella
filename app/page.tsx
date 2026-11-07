@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Navbar from '../src/components/Navbar'
 import Footer from '../src/components/Footer'
+
+export const instant = false
+
 export default async function HomePage() {
   const supabase = await createClient()
 
