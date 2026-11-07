@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import BookingForm from './BookingForm'
 import { createClient } from '@/lib/supabase/server'
 
-export const instant = false
 
 export default async function CarPage({
   params,

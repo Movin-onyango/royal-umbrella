@@ -46,6 +46,8 @@ node_modules/
 # Next.js build output
 .next/
 out/
+.open-next/
+.wrangler/
 
 # Production / local secrets
 .env
@@ -54,4 +56,3 @@ out/
 
 # Operating system files
 .DS_Store
-
