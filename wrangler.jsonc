@@ -5,6 +5,9 @@
   "upload_source_maps": true,
   "compatibility_date": "2026-11-06",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "SKIP_DEPENDENCY_INSTALL": "1"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
