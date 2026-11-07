@@ -3,7 +3,6 @@ import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
-export const instant = false
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -20,7 +19,6 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(6)
 
-  const heroCategory = categories?.[0]
 
   return (
     <>
