@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image' // Import Next.js optimized image component
 
 const counties = [
   { name: 'Nairobi', slug: 'nairobi' },
@@ -12,10 +13,24 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-[#F7F5F2]/95 backdrop-blur-sm border-b border-stone-200">
       <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link href="/" className="font-serif text-2xl text-[#1B3B2F] tracking-tight">
-          Royal Umbrella
+        
+        {/* Logo Section */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 relative overflow-hidden rounded-full border border-stone-200 group-hover:border-[#9C6B4E] transition-colors">
+            {/* We use Next/Image for better performance */}
+            <Image 
+              src="/logo.png" 
+              alt="Royal Umbrella Logo" 
+              fill
+              className="object-cover scale-110" // scale-110 zooms in slightly to hide outer borders of the image
+            />
+          </div>
+          <span className="font-serif text-2xl text-[#1B3B2F] tracking-tight hidden sm:block">
+            Royal Umbrella
+          </span>
         </Link>
 
+        {/* Navigation Links */}
         <nav className="hidden md:flex items-center gap-8 text-sm">
           <Link href="/fleet" className="text-stone-600 hover:text-[#1B3B2F] transition">
             The Fleet
@@ -30,7 +45,6 @@ export default function Navbar() {
               </svg>
             </button>
             
-            {/* Dropdown Menu */}
             <div className="absolute top-full left-0 w-48 bg-white border border-stone-200 shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
               <ul className="py-2">
                 {counties.map((county) => (
@@ -55,6 +69,7 @@ export default function Navbar() {
           </Link>
         </nav>
 
+        {/* Reserve Button */}
         <Link
           href="/fleet"
           className="hidden md:inline-block text-sm text-[#1B3B2F] border border-[#1B3B2F] px-5 py-2 rounded-full hover:bg-[#1B3B2F] hover:text-white transition"

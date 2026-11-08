@@ -8,6 +8,9 @@ export default function Footer() {
           <p className="font-serif text-2xl text-[#1B3B2F] mb-3">
             Royal Umbrella
           </p>
+          <p className="text-xs uppercase tracking-[0.2em] text-[#9C6B4E] mb-4">
+            Discover a different world
+          </p>
           <p className="text-sm text-stone-500 max-w-sm leading-relaxed">
             A curated fleet for those who travel with intention.
             Every vehicle is selected, not listed.
