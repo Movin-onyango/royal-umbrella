@@ -17,6 +17,9 @@ export default function BookingForm({
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Get today's date in YYYY-MM-DD format to prevent past bookings
+  const today = new Date().toISOString().split('T')[0]
+
   const days =
     start && end
       ? Math.max(
@@ -29,6 +32,13 @@ export default function BookingForm({
       : 0
 
   const total = days * pricePerDay
+  
+  // Format to KSh
+  const formattedTotal = new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: 'KES',
+    minimumFractionDigits: 0,
+  }).format(total)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,7 +47,7 @@ export default function BookingForm({
 
     const supabase = createClient()
 
-    // Check for overlapping bookings
+    // 1. Check for overlapping bookings (Double-booking prevention)
     const { data: conflicts } = await supabase
       .from('bookings')
       .select('id')
@@ -52,6 +62,7 @@ export default function BookingForm({
       return
     }
 
+    // 2. Insert the booking
     const { error } = await supabase.from('bookings').insert({
       car_id: carId,
       customer_name: name,
@@ -63,9 +74,9 @@ export default function BookingForm({
     })
 
     if (error) {
-      setMessage('Something went wrong. Please try again.')
+      setMessage(`Error: ${error.message}`)
     } else {
-      setMessage('Reservation received. We will confirm within 24 hours.')
+      setMessage('Reservation received. Our concierge will contact you shortly to confirm.')
       setName('')
       setEmail('')
       setStart('')
@@ -75,28 +86,32 @@ export default function BookingForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-      <div>
-        <label className="text-xs uppercase tracking-wider text-stone-500">Pickup</label>
-        <input
-          type="date"
-          value={start}
-          onChange={(e) => setStart(e.target.value)}
-          required
-          className="w-full border border-stone-300 p-3 mt-1 text-sm"
-        />
+    <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs uppercase tracking-wider text-stone-500">Pickup Date</label>
+          <input
+            type="date"
+            value={start}
+            min={today}
+            onChange={(e) => setStart(e.target.value)}
+            required
+            className="w-full border border-stone-300 p-3 mt-1 text-sm rounded-sm focus:outline-none focus:border-[#1B3B2F]"
+          />
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-wider text-stone-500">Return Date</label>
+          <input
+            type="date"
+            value={end}
+            min={start || today}
+            onChange={(e) => setEnd(e.target.value)}
+            required
+            className="w-full border border-stone-300 p-3 mt-1 text-sm rounded-sm focus:outline-none focus:border-[#1B3B2F]"
+          />
+        </div>
       </div>
-      <div>
-        <label className="text-xs uppercase tracking-wider text-stone-500">Return</label>
-        <input
-          type="date"
-          value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          required
-          min={start}
-          className="w-full border border-stone-300 p-3 mt-1 text-sm"
-        />
-      </div>
+      
       <div>
         <label className="text-xs uppercase tracking-wider text-stone-500">Full Name</label>
         <input
@@ -104,39 +119,51 @@ export default function BookingForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full border border-stone-300 p-3 mt-1 text-sm"
+          placeholder="e.g. John Kamau"
+          className="w-full border border-stone-300 p-3 mt-1 text-sm rounded-sm focus:outline-none focus:border-[#1B3B2F]"
         />
       </div>
+      
       <div>
-        <label className="text-xs uppercase tracking-wider text-stone-500">Email</label>
+        <label className="text-xs uppercase tracking-wider text-stone-500">Email Address</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full border border-stone-300 p-3 mt-1 text-sm"
+          placeholder="john@example.com"
+          className="w-full border border-stone-300 p-3 mt-1 text-sm rounded-sm focus:outline-none focus:border-[#1B3B2F]"
         />
       </div>
 
       {days > 0 && (
-        <div className="border-t border-stone-200 pt-4 flex justify-between">
+        <div className="border-t border-stone-200 pt-4 flex justify-between items-end">
           <span className="text-sm text-stone-500">
-            {days} day{days > 1 ? 's' : ''}
+            {days} day{days > 1 ? 's' : ''} total
           </span>
-          <span className="font-serif text-2xl text-[#1B3B2F]">${total}</span>
+          <span className="font-serif text-2xl text-[#1B3B2F]">{formattedTotal}</span>
         </div>
       )}
 
       <button
         type="submit"
         disabled={loading || days === 0}
-        className="w-full bg-[#1B3B2F] text-white py-4 rounded-full hover:bg-[#9C6B4E] transition disabled:opacity-40"
+        className="w-full bg-[#1B3B2F] text-white py-4 rounded-full text-sm hover:bg-[#C87A4A] transition disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {loading ? 'Reserving...' : 'Reserve This Vehicle'}
+        {loading ? 'Processing Request...' : 'Request Reservation'}
       </button>
 
+      <p className="flex items-center justify-center gap-2 text-xs text-stone-500">
+        <span className="rounded-sm bg-[#00A859] px-2 py-1 font-bold tracking-tight text-white">
+          M-PESA
+        </span>
+        Pay securely via M-Pesa or card.
+      </p>
+
       {message && (
-        <p className="text-sm text-center text-stone-600">{message}</p>
+        <div className={`p-4 text-sm text-center rounded-sm ${message.includes('Error') || message.includes('reserved') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+          {message}
+        </div>
       )}
     </form>
   )

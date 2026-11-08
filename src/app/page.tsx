@@ -27,7 +27,7 @@ export default async function HomePage() {
         {/* ─── HERO ─── */}
         <section className="relative max-w-6xl mx-auto px-6 pt-20 pb-24 md:pt-32 md:pb-32">
           <div className="animate-fade-up">
-            <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-[#C87A4A] mb-6">
               Curated Car Hire · Est. 2026
             </p>
             <h1 className="font-serif text-5xl md:text-7xl leading-[1.05] text-[#1B3B2F] max-w-4xl">
@@ -35,23 +35,23 @@ export default async function HomePage() {
               <br />
               the destination.
               <br />
-              <span className="italic text-[#9C6B4E]">It is the ritual.</span>
+              <span className="italic text-[#C87A4A]">It is the ritual.</span>
             </h1>
             <p className="text-lg text-stone-600 max-w-lg mt-8 leading-relaxed">
               Royal Umbrella is a small, intentional fleet for people who
               believe a car should be chosen, not rented. Browse by character,
-              not by price.
+              then set out from Nairobi toward Naivasha, Nanyuki or the Coast.
             </p>
             <div className="mt-10 flex items-center gap-6">
               <Link
                 href="/fleet"
-                className="bg-[#1B3B2F] text-white px-8 py-4 rounded-full text-sm hover:bg-[#9C6B4E] transition-colors duration-300"
+                className="bg-[#1B3B2F] text-white px-8 py-4 rounded-full text-sm hover:bg-[#C87A4A] transition-colors duration-300"
               >
                 Explore the Fleet
               </Link>
               <Link
                 href="/about"
-                className="text-sm text-[#1B3B2F] border-b border-[#1B3B2F] pb-1 hover:border-[#9C6B4E] hover:text-[#9C6B4E] transition"
+                className="text-sm text-[#1B3B2F] border-b border-[#1B3B2F] pb-1 hover:border-[#C87A4A] hover:text-[#C87A4A] transition"
               >
                 Our philosophy →
               </Link>
@@ -64,7 +64,7 @@ export default async function HomePage() {
           <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
             <div className="flex items-end justify-between mb-14">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-[#C87A4A] mb-3">
                   Chapter I
                 </p>
                 <h2 className="font-serif text-4xl md:text-5xl text-[#1B3B2F]">
@@ -73,7 +73,8 @@ export default async function HomePage() {
               </div>
               <p className="hidden md:block text-sm text-stone-500 max-w-xs text-right leading-relaxed">
                 Every car in the Royal Umbrella collection belongs to a
-                category. Choose by the kind of drive you want to have.
+                category. Choose your drive, from city streets to a Naivasha,
+                Nanyuki or Coast getaway.
               </p>
             </div>
 
@@ -88,7 +89,7 @@ export default async function HomePage() {
                     <span className="text-xs text-stone-400 font-mono">
                       0{i + 1}
                     </span>
-                    <h3 className="font-serif text-2xl text-[#1B3B2F] mt-4 mb-3 group-hover:text-[#9C6B4E] transition-colors">
+                    <h3 className="font-serif text-2xl text-[#1B3B2F] mt-4 mb-3 group-hover:text-[#C87A4A] transition-colors">
                       {cat.name}
                     </h3>
                     <p className="text-sm text-stone-500 leading-relaxed">
@@ -109,7 +110,7 @@ export default async function HomePage() {
           <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
             <div className="flex items-end justify-between mb-14">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-3">
+                <p className="text-xs uppercase tracking-[0.3em] text-[#C87A4A] mb-3">
                   Chapter II
                 </p>
                 <h2 className="font-serif text-4xl md:text-5xl text-[#1B3B2F]">
@@ -118,7 +119,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/fleet"
-                className="text-sm text-[#1B3B2F] border-b border-[#1B3B2F] pb-1 hover:border-[#9C6B4E] hover:text-[#9C6B4E] transition"
+                className="text-sm text-[#1B3B2F] border-b border-[#1B3B2F] pb-1 hover:border-[#C87A4A] hover:text-[#C87A4A] transition"
               >
                 The full fleet →
               </Link>
@@ -146,7 +147,7 @@ export default async function HomePage() {
                   </div>
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-xs uppercase tracking-widest text-[#9C6B4E] mb-2">
+                      <p className="text-xs uppercase tracking-widest text-[#C87A4A] mb-2">
                         {car.categories?.name}
                       </p>
                       <h3 className="font-serif text-xl text-[#1B3B2F]">
@@ -155,10 +156,13 @@ export default async function HomePage() {
                       <p className="text-sm text-stone-500 mt-1">
                         {car.transmission} · {car.seats} seats · {car.fuel_type}
                       </p>
+                      <p className="text-xs text-stone-500 mt-2">
+                        Location · {car.location || 'Confirm on booking'}
+                      </p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-serif text-lg text-[#1B3B2F]">
-                        ${car.price_per_day}
+                        KSh {Number(car.price_per_day).toLocaleString()}
                       </p>
                       <p className="text-xs text-stone-400">/ day</p>
                     </div>
@@ -172,7 +176,7 @@ export default async function HomePage() {
         {/* ─── PHILOSOPHY STRIP ─── */}
         <section className="bg-[#1B3B2F] text-[#F7F5F2]">
           <div className="max-w-6xl mx-auto px-6 py-24 md:py-32 text-center">
-            <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-[#C87A4A] mb-6">
               The Royal Umbrella Promise
             </p>
             <h2 className="font-serif text-3xl md:text-5xl leading-tight max-w-3xl mx-auto">
@@ -186,7 +190,7 @@ export default async function HomePage() {
             </p>
             <Link
               href="/fleet"
-              className="inline-block mt-10 bg-[#F7F5F2] text-[#1B3B2F] px-8 py-4 rounded-full text-sm hover:bg-[#9C6B4E] hover:text-white transition-colors"
+              className="inline-block mt-10 bg-[#F7F5F2] text-[#1B3B2F] px-8 py-4 rounded-full text-sm hover:bg-[#C87A4A] hover:text-white transition-colors"
             >
               Begin Your Reservation
             </Link>
