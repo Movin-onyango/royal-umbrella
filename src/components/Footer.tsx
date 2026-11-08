@@ -44,9 +44,7 @@ export default function Footer() {
           Staff Login
         </Link>
       </div>
-      <div className="max-w-6xl mx-auto px-6 pb-8 text-xs text-stone-400">
-        © {new Date().getFullYear()} Royal Umbrella. All rights reserved.
-      </div>
+      
     </footer>
   )
 }
