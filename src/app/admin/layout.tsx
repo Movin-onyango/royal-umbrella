@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     async function checkAdmin() {
-      // If they are on the login page, don't protect it
+      // If they are trying to access the login page, let them see it!
       if (pathname === '/admin/login') {
         setLoading(false)
         return
@@ -41,19 +41,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkAdmin()
   }, [pathname, router, supabase])
 
-  // Show nothing while checking auth to prevent flashing
   if (loading) {
-    return <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center text-[#1B3B2F]">Loading...</div>
+    return <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center text-[#1B3B2F]">Loading Admin...</div>
   }
 
-  // If on login page, just show the login form without the sidebar
+  // If on login page, show the form WITHOUT the sidebar
   if (pathname === '/admin/login') {
     return <>{children}</>
-  }
-
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/admin/login')
   }
 
   const navItems = [
@@ -90,7 +84,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="p-4 border-t border-[#F7F5F2]/10">
           <button
-            onClick={handleLogout}
+            onClick={async () => {
+              await supabase.auth.signOut()
+              router.push('/admin/login')
+            }}
             className="w-full text-left px-4 py-2 text-sm text-[#F7F5F2]/70 hover:text-white transition"
           >
             ← Log Out

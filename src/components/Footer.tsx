@@ -38,7 +38,12 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-
+      <div className="max-w-6xl mx-auto px-6 pb-8 flex justify-between items-center text-xs text-stone-400">
+        <p>© {new Date().getFullYear()} Royal Umbrella. All rights reserved.</p>
+        <Link href="/admin/login" className="opacity-30 hover:opacity-100 transition-opacity">
+          Staff Login
+        </Link>
+      </div>
       <div className="max-w-6xl mx-auto px-6 pb-8 text-xs text-stone-400">
         © {new Date().getFullYear()} Royal Umbrella. All rights reserved.
       </div>
