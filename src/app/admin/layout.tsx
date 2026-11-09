@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState('')
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
@@ -32,9 +33,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         .eq('id', user.id)
         .single()
 
-      if (profile?.role !== 'admin') {
+      if (profile?.role !== 'admin' && profile?.role !== 'super_admin') {
         router.push('/admin/login')
       } else {
+        setUserRole(profile.role)
         setLoading(false)
       }
     }
@@ -55,6 +57,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Manage Cars', href: '/admin/cars' },
     { name: 'Bookings', href: '/admin/bookings' },
     { name: 'Categories', href: '/admin/categories' },
+    { name: 'Settings', href: '/admin/settings' },
+    ...(userRole === 'super_admin' ? [{ name: 'Manage Admins', href: '/admin/admins' }] : []),
   ]
 
   return (

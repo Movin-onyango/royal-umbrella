@@ -15,8 +15,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Royal Umbrella — Curated Car Hire',
-  description: 'A curated fleet for those who travel with intention.',
+  title: 'Royal Umbrella | Premium Car Hire in Kenya',
+  description: 'Discover a different world. Hire premium, curated vehicles in Nairobi, Mombasa, Kisumu, Nakuru, and Eldoret.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
