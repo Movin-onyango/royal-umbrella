@@ -10,6 +10,7 @@ type Booking = {
   start_date: string
   end_date: string
   total_price: number
+  booking_ref: string | null
   status: 'pending' | 'confirmed' | 'cancelled'
   created_at: string
   cars: { name: string } | null
@@ -18,33 +19,47 @@ type Booking = {
 export default function ManageBookings() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
     async function fetchBookings() {
       setLoading(true)
-      const { data } = await supabase
+      setLoadError('')
+      const { data, error } = await supabase
         .from('bookings')
         .select('*, cars(name)')
         .order('created_at', { ascending: false })
-      
-      if (data) setBookings(data as unknown as Booking[])
+
+      if (error) {
+        setLoadError(`Error loading bookings: ${error.message}`)
+      } else {
+        setBookings(data as unknown as Booking[])
+      }
       setLoading(false)
     }
-    fetchBookings()
+
+    void fetchBookings()
   }, [supabase])
 
-  async function updateStatus(id: string, newStatus: 'pending' | 'confirmed' | 'cancelled') {
-    const { error } = await supabase
+  async function updateStatus(id: string, newStatus: Booking['status']) {
+    const { data, error } = await supabase
       .from('bookings')
       .update({ status: newStatus })
       .eq('id', id)
+      .select('id')
+      .maybeSingle()
 
     if (error) {
-      alert('Error updating status: ' + error.message)
+      alert('Error updating booking status: ' + error.message)
+    } else if (!data) {
+      alert('The booking was not updated. Check that your admin account has permission to manage bookings.')
     } else {
-      // Refresh the list by updating local state
-      setBookings(bookings.map(b => b.id === id ? { ...b, status: newStatus } : b))
+      setBookings((current) =>
+        current.map((booking) =>
+          booking.id === id ? { ...booking, status: newStatus } : booking,
+        ),
+      )
     }
   }
 
@@ -57,10 +72,17 @@ export default function ManageBookings() {
         <p className="text-stone-500">Review and manage customer reservations.</p>
       </div>
 
+      {loadError && (
+        <p role="alert" className="mb-6 border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {loadError}
+        </p>
+      )}
+
       <div className="bg-white border border-stone-200 overflow-x-auto">
         <table className="w-full text-left text-sm whitespace-nowrap">
           <thead className="bg-stone-50 text-stone-500 uppercase tracking-widest text-xs border-b border-stone-200">
             <tr>
+              <th className="p-4 font-normal">Ref</th>
               <th className="p-4 font-normal">Customer</th>
               <th className="p-4 font-normal">Vehicle</th>
               <th className="p-4 font-normal">Dates</th>
@@ -70,35 +92,52 @@ export default function ManageBookings() {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
-            {bookings.map(booking => (
+            {bookings.map((booking) => (
               <tr key={booking.id} className="hover:bg-stone-50">
+                <td className="p-4 font-mono text-xs">{booking.booking_ref || '---'}</td>
                 <td className="p-4">
                   <p className="font-medium text-[#1B3B2F]">{booking.customer_name}</p>
-                  <a href={`mailto:${booking.customer_email}`} className="text-xs text-[#9C6B4E] hover:underline">
+                  <a
+                    href={`mailto:${booking.customer_email}`}
+                    className="text-xs text-[#9C6B4E] hover:underline"
+                  >
                     {booking.customer_email}
                   </a>
                 </td>
-                <td className="p-4 text-stone-600 font-serif">{booking.cars?.name || 'Deleted Car'}</td>
+                <td className="p-4 text-stone-600 font-serif">
+                  {booking.cars?.name || 'Deleted Car'}
+                </td>
                 <td className="p-4 text-stone-600">
-                  {new Date(booking.start_date).toLocaleDateString('en-GB')} <br/>
-                  <span className="text-stone-400 text-xs">to</span> <br/>
+                  {new Date(booking.start_date).toLocaleDateString('en-GB')}
+                  <br />
+                  <span className="text-stone-400 text-xs">to</span>
+                  <br />
                   {new Date(booking.end_date).toLocaleDateString('en-GB')}
                 </td>
-                <td className="p-4 font-medium">{Number(booking.total_price).toLocaleString()}</td>
+                <td className="p-4 font-medium">
+                  {Number(booking.total_price).toLocaleString()}
+                </td>
                 <td className="p-4">
-                  <span className={`px-3 py-1 text-xs rounded-full border ${
-                    booking.status === 'confirmed' ? 'bg-green-50 text-green-700 border-green-200' : 
-                    booking.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' : 
-                    'bg-yellow-50 text-yellow-700 border-yellow-200'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 text-xs rounded-full border ${
+                      booking.status === 'confirmed'
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : booking.status === 'cancelled'
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                    }`}
+                  >
                     {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                   </span>
                 </td>
                 <td className="p-4">
-                  <select 
+                  <select
                     value={booking.status}
-                    onChange={(e) => updateStatus(booking.id, e.target.value as 'pending' | 'confirmed' | 'cancelled')}
+                    onChange={(event) =>
+                      updateStatus(booking.id, event.target.value as Booking['status'])
+                    }
                     className="border border-stone-300 p-2 text-xs rounded bg-white focus:outline-none focus:border-[#1B3B2F]"
+                    aria-label={`Update status for ${booking.customer_name}'s booking`}
                   >
                     <option value="pending">Set Pending</option>
                     <option value="confirmed">Confirm Booking</option>
@@ -107,9 +146,11 @@ export default function ManageBookings() {
                 </td>
               </tr>
             ))}
-            {bookings.length === 0 && (
+            {!loadError && bookings.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-8 text-center text-stone-500">No bookings yet.</td>
+                <td colSpan={7} className="p-8 text-center text-stone-500">
+                  No bookings yet.
+                </td>
               </tr>
             )}
           </tbody>

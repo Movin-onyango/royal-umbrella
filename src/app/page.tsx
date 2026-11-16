@@ -2,151 +2,120 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import HomeHero from '@/components/HomeHero'
+import HeroSlider from '@/components/HeroSlider'
+import QuickSearch from '@/components/QuickSearch'
+import MovingCars from '@/components/MovingCars'
+import BrandTicker from '@/components/BrandTicker'
 import Ticker from '@/components/Ticker'
+import ServiceIcon from '@/components/ServiceIcon'
 
 export default async function HomePage() {
   const supabase = await createClient()
 
-  // Fetch settings, categories, and featured cars
-  const { data: settings } = await supabase.from('site_settings').select('*').eq('id', 1).single()
+  const { data: sliders } = await supabase.from('hero_sliders').select('*').order('display_order')
   const { data: categories } = await supabase.from('categories').select('*').order('display_order')
-  const { data: featuredCars } = await supabase
+  const { data: carsWithBrands } = await supabase.from('cars').select('brand').not('brand', 'is', null)
+  const uniqueBrands = [...new Set((carsWithBrands ?? [])
+    .map((car) => car.brand)
+    .filter((brand): brand is string => typeof brand === 'string' && brand.trim() !== ''))]
+    .map((name) => ({ name }))
+  
+  // Fetch features for the "Why Choose Us" section
+  const { data: features } = await supabase.from('features').select('*').order('display_order').limit(4)
+  
+  // Fetch services for the new Services section
+  const { data: services } = await supabase
+    .from('services')
+    .select('id, title, description, icon, display_order')
+    .order('display_order')
+    .limit(4)
+
+  const { data: allCars } = await supabase
     .from('cars')
     .select('*, categories(name)')
     .eq('is_available', true)
-    .limit(3)
-
-  // Fallbacks
-  const heroTitle = settings?.hero_title || 'The drive is not the destination. It is the ritual.'
-  const heroSubtitle = settings?.hero_subtitle || 'Royal Umbrella is a small, intentional fleet for people who believe a car should be chosen, not rented. Browse by character, then set out from Nairobi toward Naivasha, Nanyuki or the Coast.'
-  const heroImageUrl = settings?.hero_image_url || 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=2000&auto=format&fit=crop'
+    .order('created_at', { ascending: false })
+    .limit(6)
 
   return (
     <>
       <Navbar />
       <main className="bg-[#F7F5F2]">
         
-        {/* NEW HERO SECTION (Client Component for Animations) */}
-        <HomeHero 
-          title={heroTitle} 
-          subtitle={heroSubtitle} 
-          imageUrl={heroImageUrl} 
-        />
+        {/* 1. HERO SLIDER */}
+        <HeroSlider sliders={sliders || []} />
 
-        {/* MOVING TICKER */}
+        {/* QUICK SEARCH */}
+        <QuickSearch />
+
+        {/* 2. MOVING CATEGORIES TICKER */}
         <Ticker categories={categories || []} />
 
-        {/* CATEGORIES SECTION */}
-        <section className="max-w-6xl mx-auto px-6 py-24">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-3">
-                Chapter I
-              </p>
-              <h2 className="font-serif text-4xl md:text-5xl text-[#1B3B2F]">
-                Choose Your Character
-              </h2>
-            </div>
-            <p className="text-stone-500 max-w-sm text-sm">
-              Every car in the Royal Umbrella collection belongs to a category. Choose by the kind of drive you want to have.
-            </p>
-          </div>
+        {/* 3. FEATURED VEHICLES (Moved up for instant gratification) */}
+        <MovingCars cars={allCars || []} />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {categories?.map((cat, i) => (
-              <Link
-                key={cat.id}
-                href={`/fleet?category=${cat.slug}`}
-                className="group bg-white p-10 flex flex-col justify-between min-h-[300px] border border-stone-200 hover:border-[#1B3B2F] transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
-              >
-                <div>
-                  <span className="text-xs text-stone-400 font-mono">
-                    0{i + 1}
-                  </span>
-                  <h3 className="font-serif text-3xl text-[#1B3B2F] mt-6 mb-3 group-hover:text-[#9C6B4E] transition-colors">
-                    {cat.name}
-                  </h3>
-                  <p className="text-sm text-stone-500 leading-relaxed">
-                    {cat.description}
-                  </p>
-                </div>
-                <span className="text-xs uppercase tracking-widest text-[#1B3B2F] mt-8 group-hover:translate-x-2 transition-transform duration-300 inline-block font-medium">
-                  Explore Fleet →
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* FEATURED FLEET */}
-        <section className="bg-white border-y border-stone-200">
-          <div className="max-w-6xl mx-auto px-6 py-24">
-            <div className="flex justify-between items-end mb-16">
+        {/* 4. SERVICES GRID */}
+        <section className="bg-[#F7F5F2] py-16 md:py-24">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-3">
-                  Chapter II
-                </p>
-                <h2 className="font-serif text-4xl md:text-5xl text-[#1B3B2F]">
-                  Selected for You
-                </h2>
+                <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-2">What We Offer</p>
+                <h2 className="font-serif text-4xl md:text-5xl text-[#1B3B2F]">Services built around you</h2>
               </div>
-              <Link
-                href="/fleet"
-                className="text-sm font-medium text-[#1B3B2F] border-b border-[#1B3B2F] pb-1 hover:border-[#9C6B4E] hover:text-[#9C6B4E] transition"
-              >
-                View the full fleet →
+              <Link href="/services" className="text-sm font-medium text-[#1B3B2F] border-b border-[#1B3B2F] pb-1 hover:text-[#9C6B4E] hover:border-[#9C6B4E] transition">
+                View all services →
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredCars?.map((car) => (
-                <Link key={car.id} href={`/cars/${car.slug}`} className="group block">
-                  <div className="aspect-[4/3] bg-stone-100 overflow-hidden mb-6 relative">
-                    {car.hero_image_url && (
-                      <img
-                        src={car.hero_image_url}
-                        alt={car.name}
-                        className="w-full h-full object-cover grayscale-[40%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700 ease-out"
-                      />
-                    )}
-                    <div className="absolute top-4 right-4 bg-[#1B3B2F] text-white px-4 py-2 text-xs uppercase tracking-widest">
-                      {car.county}
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {services?.map((service, i) => (
+                <div key={service.id} className="border-t border-stone-300 pt-6">
+                  <div className="flex justify-between items-start mb-6">
+                    <span className="text-sm font-mono text-[#9C6B4E]">0{i + 1}</span>
+                    <ServiceIcon name={service.icon} className="h-5 w-5 text-[#9C6B4E]" />
                   </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-[#9C6B4E] mb-2">
-                      {car.categories?.name}
-                    </p>
-                    <h3 className="font-serif text-2xl text-[#1B3B2F] mb-1">
-                      {car.name}
-                    </h3>
-                    <p className="text-lg text-stone-600 font-medium">
-                      KSh {Number(car.price_per_day).toLocaleString()} <span className="text-sm text-stone-400 font-normal">/ day</span>
-                    </p>
-                  </div>
-                </Link>
+                  <h3 className="font-serif text-xl text-[#1B3B2F] mb-3">{service.title}</h3>
+                  <p className="text-sm text-stone-500 leading-relaxed">{service.description}</p>
+                </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* PHILOSOPHY STRIP */}
-        <section className="bg-[#1B3B2F] text-[#F7F5F2]">
-          <div className="max-w-6xl mx-auto px-6 py-32 text-center">
-            <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-6">
-              The Royal Umbrella Promise
-            </p>
-            <h2 className="font-serif text-4xl md:text-6xl leading-tight max-w-4xl mx-auto">
-              We do not have the largest fleet.
-              <br />
-              <span className="italic text-[#9C6B4E]">We have the right one.</span>
-            </h2>
-            <Link
-              href="/fleet"
-              className="inline-block mt-12 bg-[#F7F5F2] text-[#1B3B2F] px-10 py-5 rounded-full text-sm font-medium hover:bg-[#9C6B4E] hover:text-white transition-colors duration-300"
-            >
-              Begin Your Reservation
+        {/* 5. WHY CHOOSE US (Dark Section) */}
+        <section className="bg-[#1B3B2F] text-white py-16 md:py-24">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <p className="text-xs uppercase tracking-[0.3em] text-[#9C6B4E] mb-4">Our Features</p>
+              <h2 className="font-serif text-4xl md:text-5xl">What Makes Us Different</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {features?.map((feature) => (
+                <div key={feature.id} className="bg-white/5 border border-white/10 p-6 flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-full bg-[#9C6B4E]/20 flex items-center justify-center shrink-0 text-[#9C6B4E]">
+                    {/* Placeholder icon */}
+                    <span className="capitalize font-serif">{feature.icon.charAt(0)}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-white text-lg">{feature.title}</h3>
+                    <p className="text-sm text-white/60 mt-1">{feature.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* 6. BRANDS SCROLLER */}
+        <BrandTicker brands={uniqueBrands} />
+
+        {/* 7. BOTTOM CTA */}
+        <section className="bg-[#F7F5F2] py-24 text-center">
+          <div className="max-w-2xl mx-auto px-6">
+            <h2 className="font-serif text-5xl md:text-6xl text-[#1B3B2F] mb-6">Ready to Ride?</h2>
+            <Link href="/fleet" className="inline-block bg-[#9C6B4E] text-white px-10 py-5 rounded-full text-sm font-medium hover:bg-[#1B3B2F] transition-colors duration-300 shadow-xl">
+              Reserve Your Vehicle
             </Link>
           </div>
         </section>

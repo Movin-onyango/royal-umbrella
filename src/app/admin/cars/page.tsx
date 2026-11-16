@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 type Category = { id: string; name: string; slug: string }
+type CarSpec = { key: string; value: string }
 type Car = { 
   id: string; 
   name: string; 
@@ -18,6 +19,13 @@ type Car = {
   transmission: string;
   fuel_type: string;
   description: string;
+  specs: CarSpec[] | null;
+  brand?: string | null;
+  model?: string | null;
+  top_speed?: string | null;
+  rating: number | null;
+  review_count: number | null;
+  gallery_urls: string[] | null;
 }
 
 export default function ManageCars() {
@@ -39,27 +47,34 @@ export default function ManageCars() {
   const [fuelType, setFuelType] = useState('Petrol')
   const [description, setDescription] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [rating, setRating] = useState('5.0')
+  const [reviewCount, setReviewCount] = useState('10')
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+  const [newGalleryUrl, setNewGalleryUrl] = useState('')
+  const [specs, setSpecs] = useState<CarSpec[]>([
+    { key: 'Model', value: '' },
+    { key: 'Engine', value: '' },
+  ])
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      const { data: carsData } = await supabase.from('cars').select('*, categories(name)').order('created_at', { ascending: false })
-      const { data: catData } = await supabase.from('categories').select('*').order('display_order')
-      
-      if (carsData) setCars(carsData as unknown as Car[])
-      if (catData && catData.length > 0) {
-        setCategories(catData)
-        if (!categoryId) setCategoryId(catData[0].id)
-      }
-      setLoading(false)
-    }
-    fetchData()
-  }, [supabase, categoryId])
-
-  async function refreshData() {
+  const fetchData = useCallback(async () => {
+    setLoading(true)
     const { data: carsData } = await supabase.from('cars').select('*, categories(name)').order('created_at', { ascending: false })
     if (carsData) setCars(carsData as unknown as Car[])
-  }
+    const { data: catData } = await supabase.from('categories').select('*').order('display_order')
+    if (catData && catData.length > 0) {
+      setCategories(catData)
+      if (!categoryId) setCategoryId(catData[0].id)
+    }
+    setLoading(false)
+  }, [supabase, categoryId])
+
+  useEffect(() => {
+    async function loadInitialData() {
+      await fetchData()
+    }
+
+    void loadInitialData()
+  }, [fetchData])
 
   function resetForm() {
     setIsAdding(false)
@@ -72,6 +87,11 @@ export default function ManageCars() {
     setTransmission('Automatic')
     setFuelType('Petrol')
     setCounty('nairobi')
+    setRating('5.0')
+    setReviewCount('10')
+    setGalleryUrls([])
+    setNewGalleryUrl('')
+    setSpecs([{ key: 'Model', value: '' }, { key: 'Engine', value: '' }])
   }
 
   function handleEdit(car: Car) {
@@ -85,14 +105,67 @@ export default function ManageCars() {
     setTransmission(car.transmission)
     setFuelType(car.fuel_type)
     setDescription(car.description)
+    setRating(car.rating?.toString() || '5.0')
+    setReviewCount(car.review_count?.toString() || '10')
+    setGalleryUrls(car.gallery_urls || [])
+    setNewGalleryUrl('')
+    const carSpecs = car.specs || []
+    setSpecs(carSpecs.length > 0 ? carSpecs : [
+      ...(car.brand ? [{ key: 'Brand', value: car.brand }] : []),
+      ...(car.model ? [{ key: 'Model', value: car.model }] : []),
+      ...(car.top_speed ? [{ key: 'Top Speed', value: car.top_speed }] : []),
+      { key: 'Engine', value: '' },
+    ])
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function addSpec() {
+    setSpecs((current) => [...current, { key: '', value: '' }])
+  }
+
+  function updateSpec(index: number, field: keyof CarSpec, value: string) {
+    setSpecs((current) =>
+      current.map((spec, specIndex) =>
+        specIndex === index ? { ...spec, [field]: value } : spec,
+      ),
+    )
+  }
+
+  function removeSpec(index: number) {
+    setSpecs((current) => current.filter((_, specIndex) => specIndex !== index))
+  }
+
+  function addGalleryImage() {
+    const url = newGalleryUrl.trim()
+    if (!url || galleryUrls.includes(url)) return
+
+    try {
+      new URL(url)
+    } catch {
+      alert('Enter a valid image URL.')
+      return
+    }
+
+    setGalleryUrls((current) => [...current, url])
+    setNewGalleryUrl('')
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this vehicle? This cannot be undone.')) return
-    const { error } = await supabase.from('cars').delete().eq('id', id)
-    if (error) alert(error.message)
-    else refreshData()
+    const { data: deletedCar, error } = await supabase
+      .from('cars')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .maybeSingle()
+
+    if (error) {
+      alert('Error deleting car: ' + error.message)
+    } else if (!deletedCar) {
+      alert('The car was not deleted. Check that your admin account has permission to delete cars.')
+    } else {
+      setCars((prevCars) => prevCars.filter((car) => car.id !== id))
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -115,7 +188,9 @@ export default function ManageCars() {
       heroImageUrl = urlData.publicUrl
     }
 
-    // Removed 'any' and typed it properly
+    // Filter out empty specs
+    const validSpecs = specs.filter(s => s.key.trim() !== '' && s.value.trim() !== '')
+
     const carData: Record<string, unknown> = {
       name,
       price_per_day: Number(price),
@@ -125,6 +200,10 @@ export default function ManageCars() {
       transmission,
       fuel_type: fuelType,
       description,
+      rating: Number(rating),
+      review_count: Number(reviewCount),
+      gallery_urls: galleryUrls,
+      specs: validSpecs, // Save dynamic specs
     }
     
     if (heroImageUrl) carData.hero_image_url = heroImageUrl
@@ -146,14 +225,14 @@ export default function ManageCars() {
       alert('Error saving car: ' + error.message)
     } else {
       resetForm()
-      refreshData()
+      await fetchData()
     }
     setUploading(false)
   }
 
   async function toggleAvailability(id: string, currentStatus: boolean) {
     await supabase.from('cars').update({ is_available: !currentStatus }).eq('id', id)
-    refreshData()
+    fetchData()
   }
 
   if (loading) return <div className="p-10 text-stone-500">Loading vehicles...</div>
@@ -234,9 +313,64 @@ export default function ManageCars() {
               <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3} className="w-full border border-stone-300 p-3 mt-1 text-sm focus:outline-none focus:border-[#1B3B2F]"></textarea>
             </div>
 
+            <div className="md:col-span-2 border-t border-stone-200 pt-6 mt-2">
+              <label className="text-xs uppercase tracking-wider text-stone-500 mb-4 block">Dynamic Specifications (e.g., Engine, Top Speed, GPS)</label>
+              <div className="space-y-3 mb-4">
+                {specs.map((spec, index) => (
+                  <div key={index} className="flex gap-4 items-center">
+                    <input
+                      type="text"
+                      placeholder="Key (e.g. Top Speed)"
+                      value={spec.key}
+                      onChange={event => updateSpec(index, 'key', event.target.value)}
+                      className="flex-1 border border-stone-300 p-2 text-sm"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Value (e.g. 180 Km/H)"
+                      value={spec.value}
+                      onChange={event => updateSpec(index, 'value', event.target.value)}
+                      className="flex-1 border border-stone-300 p-2 text-sm"
+                    />
+                    <button type="button" onClick={() => removeSpec(index)} className="text-red-500 text-sm px-2">Remove</button>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={addSpec} className="text-sm text-[#1B3B2F] font-medium border border-stone-300 px-4 py-2 hover:bg-stone-50 transition">
+                + Add Specification
+              </button>
+            </div>
+
             <div className="md:col-span-2">
               <label className="text-xs uppercase tracking-wider text-stone-500">Hero Image {editingId && '(Leave blank to keep current)'}</label>
               <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} className="w-full border border-stone-300 p-3 mt-1 text-sm bg-white file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:bg-[#1B3B2F] file:text-white hover:file:bg-[#9C6B4E]" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 md:col-span-2">
+              <div>
+                <label className="text-xs uppercase tracking-wider text-stone-500">Star Rating (e.g. 4.9)</label>
+                <input type="number" step="0.1" max="5" min="1" value={rating} onChange={e => setRating(e.target.value)} required className="w-full border border-stone-300 p-3 mt-1 text-sm focus:outline-none focus:border-[#1B3B2F]" />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-stone-500">Review Count</label>
+                <input type="number" min="0" step="1" value={reviewCount} onChange={e => setReviewCount(e.target.value)} required className="w-full border border-stone-300 p-3 mt-1 text-sm focus:outline-none focus:border-[#1B3B2F]" />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 border-t border-stone-200 pt-6 mt-2">
+              <label className="text-xs uppercase tracking-wider text-stone-500 mb-2 block">Gallery Images</label>
+              <div className="flex gap-2 mb-4">
+                <input type="url" placeholder="Paste image URL (from Supabase Storage)" value={newGalleryUrl} onChange={e => setNewGalleryUrl(e.target.value)} className="flex-1 border border-stone-300 p-3 text-sm focus:outline-none focus:border-[#1B3B2F]" />
+                <button type="button" onClick={addGalleryImage} className="bg-[#1B3B2F] text-white px-4 py-2 text-sm">Add Image</button>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                {galleryUrls.map((url, index) => (
+                  <div key={`${url}-${index}`} className="relative w-24 h-16 bg-stone-200">
+                    <img src={url} alt={`Gallery image ${index + 1}`} className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setGalleryUrls(current => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove gallery image ${index + 1}`} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="md:col-span-2 pt-4">
@@ -256,6 +390,7 @@ export default function ManageCars() {
               <th className="p-4 font-normal">Category</th>
               <th className="p-4 font-normal">County</th>
               <th className="p-4 font-normal">Price (KSh)</th>
+              <th className="p-4 font-normal">Rating</th>
               <th className="p-4 font-normal">Status</th>
               <th className="p-4 font-normal">Actions</th>
             </tr>
@@ -274,6 +409,11 @@ export default function ManageCars() {
                 <td className="p-4 text-stone-600">{car.categories?.name || 'Uncategorized'}</td>
                 <td className="p-4 text-stone-600 capitalize">{car.county}</td>
                 <td className="p-4 text-stone-600">{Number(car.price_per_day).toLocaleString()}</td>
+                <td className="p-4 whitespace-nowrap">
+                  <span className="text-[#9C6B4E]">★</span>{' '}
+                  <span className="text-stone-700">{Number(car.rating ?? 5).toFixed(1)}</span>
+                  <span className="text-stone-400"> ({car.review_count ?? 0})</span>
+                </td>
                 <td className="p-4">
                   <button onClick={() => toggleAvailability(car.id, car.is_available)} className={`px-3 py-1 text-xs rounded-full border transition ${car.is_available ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
                     {car.is_available ? 'Available' : 'Hidden'}
